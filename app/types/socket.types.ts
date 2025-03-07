@@ -12,6 +12,6 @@ export interface ISocketType {
   startServer: (port: number) => void;
   connectToServer: (host: string, port: number, deviceName: string) => void;
   sendMessage: (message: string | Buffer) => void;
-  sendFileAck: (file: any, type: 'file' | 'image') => void;
+  sendFileAck: (file: any) => void;
   disconnect: () => void;
 }

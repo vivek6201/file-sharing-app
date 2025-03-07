@@ -8,12 +8,12 @@ import ResponsiveText from '../../components/shared/ResponsiveText';
 import LottieView from 'lottie-react-native';
 import useSocket from '../../hooks/useSocket';
 import DeviceInfo from 'react-native-device-info';
-import {getBroadcastIPAddress, getLocalIPAddress} from '../../utils/utils';
+import {getBroadcastIPAddress} from '../../utils/utils';
 import useApp from '../../hooks/useApp';
 import dgram from 'react-native-udp';
 
 const ReceiveScreen = () => {
-  const {startServer, server, isConnected} = useSocket();
+  const {isConnected} = useSocket();
   const {qrValue, setupServer} = useApp();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -27,28 +27,28 @@ const ReceiveScreen = () => {
       type: 'udp4',
       reusePort: true,
     });
-
-    client.bind(() => {
-      try {
-        if (isIos) {
-          client.setBroadcast(true);
-        }
-
-        client.send(qrValue, 0, qrValue.length, port, targetAddress, err => {
-          if (err) {
-            console.log('error while sending discovery signal', err);
-          } else {
-            console.log(
-              `${deviceName} discovery signal sent to ${targetAddress}`,
-            );
+    
+    try {
+      client.bind(() => {
+        try {
+          if (isIos) {
+            client.setBroadcast(true);
           }
+
+          client.send(qrValue, 0, qrValue.length, port, targetAddress, err => {
+            if (err) {
+              console.log('error while sending discovery signal', err);
+            }
+            client.close();
+          });
+        } catch (error) {
+          console.error('failed to set broadcast', error);
           client.close();
-        });
-      } catch (error) {
-        console.error('failed to set broadcast', error);
-        client.close();
-      }
-    });
+        }
+      });
+    } catch (error) {
+      console.error('failed to bind to the client', error);
+    }
   };
 
   useEffect(() => {
@@ -84,8 +84,8 @@ const ReceiveScreen = () => {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      navigate('Connection');
     }
-    navigate('ConnectionScreen');
   }, [isConnected]);
 
   return (

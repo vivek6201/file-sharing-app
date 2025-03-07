@@ -1,6 +1,7 @@
 import DeviceInfo from 'react-native-device-info';
 import {NetworkInfo} from 'react-native-network-info';
 import {isIos} from './constants';
+import {pick, types} from '@react-native-documents/picker';
 
 export const getLocalIPAddress = async () => {
   try {
@@ -30,6 +31,50 @@ export const getBroadcastIPAddress = async () => {
     return broadcastAddress;
   } catch (error) {
     console.error('error while getting broadcast address', error);
+    return null;
+  }
+};
+
+export const formatFileSize = (sizeInBytes: number): string => {
+  if (sizeInBytes >= 1024 ** 3) {
+    return (sizeInBytes / 1024 ** 3).toFixed(2) + ' GB';
+  } else if (sizeInBytes >= 1024 ** 2) {
+    return (sizeInBytes / 1024 ** 2).toFixed(2) + ' MB';
+  } else if (sizeInBytes >= 1024) {
+    return (sizeInBytes / 1024).toFixed(2) + ' KB';
+  } else {
+    return sizeInBytes + ' B';
+  }
+};
+
+export const filePicker = async (type: string) => {
+  let accType;
+  switch (type) {
+    case 'image':
+      accType = types.images;
+      break;
+    case 'video':
+      accType = types.video;
+      break;
+    case 'file':
+      accType = types.allFiles;
+      break;
+    case 'audio':
+      accType = types.audio;
+      break;
+    default:
+      accType = types.allFiles;
+      break;
+  }
+
+  try {
+    const [result] = await pick({
+      mode: 'open',
+      type: accType,
+    });
+    return result;
+  } catch (err) {
+    console.error('error while picking up files', err);
     return null;
   }
 };

@@ -6,13 +6,19 @@ import colors from '../../styles/colors';
 import {dimensions} from '../../utils/constants';
 import ResponsiveText from './ResponsiveText';
 
-const CommonHeader = ({title}: {title: string}) => {
+const CommonHeader = ({
+  title,
+  customBackAction,
+}: {
+  title: string;
+  customBackAction?: () => void;
+}) => {
   const canGoBack = navigationRef.canGoBack();
   return (
     <View style={styles.headerContainer}>
       {/* Render button only if canGoBack is true */}
       {canGoBack && (
-        <TouchableOpacity onPress={() => goBack()} style={styles.goBackButton}>
+        <TouchableOpacity onPress={() => customBackAction ? customBackAction() : goBack()} style={styles.goBackButton}>
           <CircleArrowLeft color={'white'} />
         </TouchableOpacity>
       )}

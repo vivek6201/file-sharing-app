@@ -1,3 +1,4 @@
+import 'react-native-get-random-values';
 import {createContext, useCallback, useState} from 'react';
 import {ISocketType} from '../types/socket.types';
 import TCPSocket from 'react-native-tcp-socket';
@@ -9,7 +10,7 @@ import {produce} from 'immer';
 import {Buffer} from 'buffer';
 import {receiveChunkAck, receiveFileAck, sendChunkAck} from '../utils/tcpUtils';
 import {Alert} from 'react-native';
-import {randomUUID} from 'crypto';
+import {v4 as uuidv4} from 'uuid';
 
 export const SocketContext = createContext<ISocketType | null>(null);
 
@@ -34,7 +35,6 @@ const TcpContextProvider = ({children}: {children: React.ReactNode}) => {
 
   const disconnect = useCallback(() => {
     if (client) client.destroy();
-
     if (server) server.close();
 
     setReceivedFiles([]);
@@ -46,72 +46,76 @@ const TcpContextProvider = ({children}: {children: React.ReactNode}) => {
   }, [client, server]);
 
   //Start server
-  const startServer = useCallback(() => {
-    const port = 8080; // or any port number you prefer
-    if (server) {
-      console.log('Server already running');
-      return;
-    }
+  const startServer = useCallback(
+    (port: number) => {
+      if (server) {
+        console.log('Server already running');
+        return;
+      }
 
-    const newServer = TCPSocket.createTLSServer(options, socket => {
-      console.log('client connected', socket.address);
+      const newServer = TCPSocket.createTLSServer(options, socket => {
+        console.log('client connected', socket.address);
 
-      setServerSocket(socket);
-      socket.setNoDelay(true);
-      socket.readableHighWaterMark = 1024 * 1024 * 1;
-      socket.writableHighWaterMark = 1024 * 1024 * 1;
+        setServerSocket(socket);
+        socket.setNoDelay(true);
+        socket.readableHighWaterMark = 1024 * 1024 * 1; // 1MB
+        socket.writableHighWaterMark = 1024 * 1024 * 1;
 
-      socket.on('data', async data => {
-        const parsedData = JSON.parse(data.toString());
+        socket.on('data', async data => {
+          const parsedData = JSON.parse(data.toString());
 
-        switch (parsedData.event) {
-          case 'connect':
-            setIsConnected(true);
-            setConnectedDevice(parsedData?.deviceName);
-            break;
-          case 'file-ack':
-            receiveFileAck(parsedData?.file, socket, setReceivedFiles);
-            break;
-          case 'send-chunk-ack':
-            sendChunkAck(
-              parsedData?.chunkNo,
-              socket,
-              setTotalSentBytes,
-              setSentFiles,
-            );
-            break;
-          case 'receive-chunk-ack':
-            receiveChunkAck(
-              parsedData?.chunk,
-              parsedData?.chunkNo,
-              socket,
-              setTotalReceivedBytes,
-              generateFile,
-            );
-            break;
-        }
+          switch (parsedData.event) {
+            case 'connect':
+              setIsConnected(true);
+              setConnectedDevice(parsedData?.deviceName);
+              break;
+            case 'file-ack':
+              receiveFileAck(parsedData?.file, socket, setReceivedFiles);
+              break;
+            case 'send-chunk-ack':
+              sendChunkAck(
+                parsedData?.chunkNo,
+                socket,
+                setTotalSentBytes,
+                setSentFiles,
+              );
+              break;
+            case 'receive-chunk-ack':
+              receiveChunkAck(
+                parsedData?.chunk,
+                parsedData?.chunkNo,
+                socket,
+                setTotalReceivedBytes,
+                generateFile,
+              );
+              break;
+          }
+        });
+
+        socket.on('close', () => {
+          console.log('client disconnected');
+          setReceivedFiles([]);
+          setSentFiles([]);
+          setCurrentChunkSet(null);
+          setTotalReceivedBytes(0);
+          setChunkStore(null);
+          setIsConnected(false);
+          disconnect();
+        });
       });
 
-      socket.on('close', () => {
-        console.log('client disconnected');
-        setReceivedFiles([]);
-        setSentFiles([]);
-        setCurrentChunkSet(null);
-        setTotalReceivedBytes(0);
-        setChunkStore(null);
-        setIsConnected(false);
-        disconnect();
+      newServer.listen({port, host: '0.0.0.0'}, () => {
+        const address = newServer.address();
+        console.log(
+          `server is running on ${address?.address}:${address?.port}`,
+        );
       });
-    });
 
-    newServer.listen({port, host: '0.0.0.0'}, () => {
-      const address = newServer.address();
-      console.log(`server is running on ${address?.address}:${address?.port}`);
-    });
-
-    newServer.on('error', err => console.error('Server error', err));
-    setServer(newServer);
-  }, [server]);
+      newServer.on('error', err => console.error('Server error', err));
+      setServer(newServer);
+    },
+    [server],
+  );
 
   //Stack client
   const connectToServer = useCallback(
@@ -134,7 +138,7 @@ const TcpContextProvider = ({children}: {children: React.ReactNode}) => {
       );
 
       newClient.setNoDelay(true);
-      newClient.readableHighWaterMark = 1024 * 1024 * 1;
+      newClient.readableHighWaterMark = 1024 * 1024 * 1; // 64KB
       newClient.writableHighWaterMark = 1024 * 1024 * 1;
 
       newClient.on('data', async data => {
@@ -181,6 +185,9 @@ const TcpContextProvider = ({children}: {children: React.ReactNode}) => {
 
   const generateFile = async () => {
     const {chunkStore, resetChunkStore} = useChunkStore.getState();
+    console.log('generating file', {
+      chunkArrayLength: chunkStore?.chunkArray.length,
+    });
 
     if (!chunkStore) {
       console.log('no chunks or files to process!');
@@ -243,7 +250,8 @@ const TcpContextProvider = ({children}: {children: React.ReactNode}) => {
     [client, server],
   );
 
-  const sendFileAck = async (file: any, type: 'image' | 'file') => {
+  const sendFileAck = async (file: any) => {
+    console.log({file});
     if (currentChunkSet !== null) {
       Alert.alert('Wait for current file sent');
       return;
@@ -267,12 +275,13 @@ const TcpContextProvider = ({children}: {children: React.ReactNode}) => {
       chunkArray.push(chunk);
       offset += chunk.length;
     }
-
+    
     const rawData = {
-      id: randomUUID(),
-      name: type === 'file' ? file?.name : file?.fileName,
-      size: type === 'file' ? file.size : file.fileSize,
-      mimeType: type === 'file' ? 'file' : '.jpg',
+      id: uuidv4(),
+      name: file?.name,
+      size: file.size,
+      type: `.${file.name.split('.').pop()}`,
+      mimeType: file.type,
       totalChunks,
     };
 

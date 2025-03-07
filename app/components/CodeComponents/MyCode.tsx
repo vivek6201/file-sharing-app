@@ -11,6 +11,8 @@ import {
 } from 'react-native-reanimated';
 import ResponsiveText from '../shared/ResponsiveText';
 import useApp from '../../hooks/useApp';
+import useSocket from '../../hooks/useSocket';
+import {navigate} from '../../helpers/NavigationManager.';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
@@ -18,6 +20,7 @@ const MyCodeScreen = () => {
   const {qrValue, setupServer} = useApp();
   const [loading, setLoading] = useState(false);
   const shimmerTranslateX = useSharedValue(-300);
+  const {isConnected} = useSocket();
 
   const shimmerStyle = useAnimatedStyle(() => ({
     transform: [{translateX: shimmerTranslateX.value}],
@@ -34,6 +37,12 @@ const MyCodeScreen = () => {
   useEffect(() => {
     setupServer();
   }, []);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    navigate('Connection');
+  }, [isConnected]);
 
   return (
     <View style={styles.container}>

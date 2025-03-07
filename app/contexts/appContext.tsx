@@ -20,6 +20,7 @@ const AppContextProvider = ({children}: {children: React.ReactNode}) => {
     const port = 4000;
 
     if (!server) {
+      console.log("no server exist start a new server");
       startServer(port);
     }
 

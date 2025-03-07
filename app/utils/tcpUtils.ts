@@ -1,6 +1,7 @@
 import {produce} from 'immer';
 import {Alert} from 'react-native';
 import {useChunkStore} from '../store/chunkStore';
+import {Buffer} from 'buffer';
 
 export const receiveFileAck = async (
   data: any,
@@ -128,9 +129,11 @@ export const receiveChunkAck = async (
     const updatedChunkArray = [...(chunkStore.chunkArray || [])];
     updatedChunkArray[chunkNo] = buffer;
 
+    console.log({chunkStore});
+
     setChunkStore({
       ...chunkStore,
-      chunkStore: updatedChunkArray,
+      chunkArray: updatedChunkArray,
     });
 
     setTotalReceivedBytes((prev: number) => prev + buffer.length);
@@ -138,7 +141,9 @@ export const receiveChunkAck = async (
     console.error('error while updating chunk', error);
   }
 
-  if (chunk + 1 === chunkStore.totalChunks) {
+  console.log({chunkNo, totalChunks: chunkStore.totalChunks});
+
+  if (chunkNo + 1 === chunkStore.totalChunks) {
     console.log('all chunks received');
     generateFile();
     resetChunkStore();

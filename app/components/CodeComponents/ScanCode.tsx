@@ -55,7 +55,7 @@ const ScanCodeScreen = () => {
   useEffect(() => {
     if (!isConnected) return;
 
-    navigate('ConnectionScreen');
+    navigate('Connection');
   }, [isConnected]);
 
   return (
