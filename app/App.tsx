@@ -3,7 +3,6 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import HomeScreen from './screens/HomeScreen';
 import SendScreen from './screens/Transfer/SendScreen';
 import ReceiveScreen from './screens/Transfer/ReceiveScreen';
-import MyCodeScreen from './components/CodeComponents/MyCode';
 import CodeActions from './screens/Transfer/CodeActions';
 
 const Stack = createNativeStackNavigator();

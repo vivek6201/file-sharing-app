@@ -4,25 +4,30 @@ import {dimensions} from '../../utils/constants';
 import colors from '../../styles/colors';
 import {CircleArrowLeft} from 'lucide-react-native';
 import {goBack} from '../../helpers/NavigationManager.';
+import LottieView from 'lottie-react-native';
+import ResponsiveText from '../../components/shared/ResponsiveText';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SendScreen = () => {
-  // const pickDocuments = async () => {
-  //   const result = await pick({
-  //     allowMultiSelection: true,
-  //     mode: 'open',
-  //   });
-
-  //   setFiles(result);
-  // };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <TouchableOpacity style={styles.backBtn} onPress={goBack}>
         <CircleArrowLeft color={'white'} size={26} />
       </TouchableOpacity>
 
-
-    </View>
+      <View style={styles.waveContainer}>
+        <ResponsiveText variant="h5" fontWeight={'600'}>
+          Scanning for Receiver
+        </ResponsiveText>
+        <LottieView
+          source={require('../../../assets/animations/senderWaveAnimation.json')}
+          style={{width: 300, height: 300, marginTop: 10}}
+          autoPlay
+          loop
+        />
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -40,5 +45,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 25,
     top: 25,
+  },
+  waveContainer: {
+    flex: 1,
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: dimensions.height,
+    width: dimensions.width,
   },
 });

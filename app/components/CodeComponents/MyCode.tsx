@@ -10,12 +10,13 @@ import {
   Easing,
 } from 'react-native-reanimated';
 import ResponsiveText from '../shared/ResponsiveText';
+import useApp from '../../hooks/useApp';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 const MyCodeScreen = () => {
+  const {qrValue, setupServer} = useApp();
   const [loading, setLoading] = useState(false);
-  const [qrValue, setQrValue] = useState('Vivek');
   const shimmerTranslateX = useSharedValue(-300);
 
   const shimmerStyle = useAnimatedStyle(() => ({
@@ -28,6 +29,10 @@ const MyCodeScreen = () => {
       -1,
       false,
     );
+  }, []);
+
+  useEffect(() => {
+    setupServer();
   }, []);
 
   return (

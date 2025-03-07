@@ -1,8 +1,11 @@
 import {Image, StyleSheet, Text, View} from 'react-native';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Camera, CodeScanner, useCameraDevice} from 'react-native-vision-camera';
+import useSocket from '../../hooks/useSocket';
+import {navigate} from '../../helpers/NavigationManager.';
 
 const ScanCodeScreen = () => {
+  const {connectToServer, isConnected} = useSocket();
   const [codeFound, setCodeFound] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
   const device = useCameraDevice('back');
@@ -23,8 +26,12 @@ const ScanCodeScreen = () => {
   }, []);
 
   const handleScannedData = (data?: string) => {
-    const [connectionData, deviceName] = data?.replace('tcp://', '').split('|');
+    const [connectionData, deviceName] = data
+      ? data.replace('tcp://', '').split('|')
+      : ['', ''];
     const [host, port] = connectionData.split(':');
+
+    connectToServer(host, Number(port), deviceName);
   };
 
   const codeScanner = useMemo<CodeScanner>(
@@ -44,6 +51,12 @@ const ScanCodeScreen = () => {
     }),
     [codeFound],
   );
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    navigate('ConnectionScreen');
+  }, [isConnected]);
 
   return (
     <View style={styles.container}>
@@ -80,6 +93,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    marginBottom: 10
+    marginBottom: 10,
   },
 });
